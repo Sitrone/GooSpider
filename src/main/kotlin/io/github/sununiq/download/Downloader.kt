@@ -2,9 +2,12 @@ package io.github.sununiq.download
 
 import io.github.sununiq.request.Request
 import io.github.sununiq.response.Response
+import io.github.sununiq.response.SimpleResponse
 import io.github.sununiq.scheduler.Scheduler
 import org.apache.http.HttpHeaders
 import org.slf4j.LoggerFactory
+import java.nio.charset.Charset
+import java.nio.charset.StandardCharsets
 
 /**
  * downloader
@@ -27,3 +30,14 @@ class Downloader<T>(private val scheduler: Scheduler<T>, val request: Request<T>
         log.debug("Finished request.")
     }
 }
+
+fun downloadPage(url: String,
+                 contentType: String = "text/html; charset=UTF-8",
+                 charset: Charset = StandardCharsets.UTF_8
+) = SimpleResponse(org.apache.http.client.fluent.Request
+        .Get(url)
+        .addHeader(HttpHeaders.CONTENT_TYPE, contentType)
+        .execute()
+        .returnContent()
+        .asString(charset)
+)

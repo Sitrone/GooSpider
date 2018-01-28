@@ -18,3 +18,12 @@ fun <T> Response<T>.css(css: String): Elements? = Jsoup.parse(this.body).select(
 
 
 fun <T> Response<T>.xpath(xpath: String): XElements? = Xsoup.compile(xpath).evaluate(Jsoup.parse(this.body))
+
+data class SimpleResponse(
+        val body: String
+)
+
+fun SimpleResponse.css(css: String): Elements? = Jsoup.parse(this.body).select(css)
+
+
+fun SimpleResponse.xpath(xpath: String): XElements? = Xsoup.compile(xpath).evaluate(Jsoup.parse(this.body))
