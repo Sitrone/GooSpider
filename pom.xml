@@ -3,11 +3,11 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>io.github.sununiq</groupId>
-    <artifactId>sy-spider</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <artifactId>GooSpider</artifactId>
+    <version>1.0.0</version>
     <packaging>jar</packaging>
 
-    <name>sy-spider</name>
+    <name>GooSpider</name>
     <url>http://maven.apache.org</url>
 
     <properties>
