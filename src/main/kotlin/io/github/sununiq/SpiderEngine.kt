@@ -6,9 +6,11 @@ import io.github.sununiq.config.EventType
 import io.github.sununiq.download.Downloader
 import io.github.sununiq.scheduler.Scheduler
 import io.github.sununiq.spider.BaseSpider
+import io.github.sununiq.spider.SpiderState
 import io.github.sununiq.util.NamedThreadFactory
 import org.slf4j.LoggerFactory
 import java.util.*
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlin.properties.Delegates
@@ -49,10 +51,10 @@ class SpiderEngine<T>(
 
     private val executorService = Executors.newFixedThreadPool(config.threadNum, NamedThreadFactory("task"))
 
+    private val downloaderService = Executors.newSingleThreadExecutor(NamedThreadFactory("downloader", true))
+
     fun start() {
         EventManager.runEvent(EventType.GLOBAL, this.config)
-
-        this.isRunning = true
 
         this.spiders.forEach { spider ->
             val localConfig = config.copy()
@@ -62,7 +64,7 @@ class SpiderEngine<T>(
             log.info("BaseSpider [{}] config [{}]", spider.name, localConfig)
 
             val requests = spider.startUrls.map {
-                spider.makeRequest(it)
+                spider.generateRequest(it)
             }
 
             spider.requests.addAll(requests)
@@ -72,21 +74,7 @@ class SpiderEngine<T>(
         }
 
         // 后台生产
-        val downloadTread = Thread {
-            while (isRunning) {
-                if (!scheduler.hasRequest()) {
-                    TimeUnit.MILLISECONDS.sleep(100)
-                    continue
-                }
-                val request = scheduler.nextRequest()
-                executorService.execute(Downloader(scheduler, request))
-                TimeUnit.MILLISECONDS.sleep(request.spider.config.delay.toLong())
-            }
-        }
-
-        downloadTread.isDaemon = true
-        downloadTread.name = "download-thread"
-        downloadTread.start()
+        downloaderService.execute(DownloaderTask(executorService, scheduler))
 
         this.complete()
     }
@@ -95,7 +83,7 @@ class SpiderEngine<T>(
      * start background task
      */
     private fun complete() {
-        while (isRunning) {
+        while (SpiderState.isRunning.get()) {
             if (!scheduler.hasResponse()) {
                 TimeUnit.MILLISECONDS.sleep(100)
                 continue
@@ -117,8 +105,28 @@ class SpiderEngine<T>(
 
 
     fun stop() {
-        isRunning = false
+        SpiderState.isRunning.set(false)
         scheduler.clear()
         log.info("stop spider.")
+    }
+
+    /**
+     * 后台生产
+     */
+    private class DownloaderTask<T>(val executorService: ExecutorService, val scheduler: Scheduler<T>) : Runnable {
+
+        override fun run() {
+            while (SpiderState.isRunning.get()) {
+                if (!scheduler.hasRequest()) {
+                    TimeUnit.MILLISECONDS.sleep(100L + Random().nextInt(500))
+                    continue
+                }
+
+                val request = scheduler.nextRequest()
+                executorService.execute(Downloader(scheduler, request))
+                TimeUnit.MILLISECONDS.sleep(request.spider.config.delay.toLong())
+            }
+        }
+
     }
 }

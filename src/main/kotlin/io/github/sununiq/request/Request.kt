@@ -18,3 +18,6 @@ data class Request<T>(val spider: BaseSpider<T>, val url: String, val parser: (r
 
     var contentType: String = "text/html; charset=UTF-8"
 }
+
+
+typealias Parser<T> = (response: Response<T>) -> Result<T>

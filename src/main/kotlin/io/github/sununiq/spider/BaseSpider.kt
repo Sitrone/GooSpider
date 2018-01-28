@@ -4,10 +4,10 @@ import io.github.sununiq.config.Config
 import io.github.sununiq.config.EventManager
 import io.github.sununiq.config.EventType
 import io.github.sununiq.pipeline.Pipeline
+import io.github.sununiq.request.Parser
 import io.github.sununiq.request.Request
 import io.github.sununiq.response.Response
 import io.github.sununiq.response.Result
-import java.util.function.Consumer
 import kotlin.properties.Delegates
 
 /**
@@ -20,7 +20,9 @@ abstract class BaseSpider<T> constructor(val name: String) {
     val pipelines = ArrayList<Pipeline<T>>()
 
     init {
-        EventManager.registerEvent(EventType.GLOBAL) { config -> onStart(config) }
+        EventManager.registerEvent(EventType.GLOBAL) {
+            config -> onStart(config)
+        }
     }
 
     fun addStartUrls(vararg urls: String) = urls.map { startUrls.add(it) }
@@ -41,12 +43,14 @@ abstract class BaseSpider<T> constructor(val name: String) {
     /**
      * 解析生成请求
      */
-    fun makeRequest(url: String): Request<T> = makeRequest(url) { response -> parse(response) }
+    fun generateRequest(url: String): Request<T> = generateRequest(url) {
+        response -> parse(response)
+    }
 
     /**
      * 解析生成请求
      */
-    fun makeRequest(url: String, parser: (response: Response<T>) -> Result<T>): Request<T> {
+    private fun generateRequest(url: String, parser: Parser<T>): Request<T> {
         return Request<T>(this, url, parser)
     }
 
@@ -59,8 +63,8 @@ abstract class BaseSpider<T> constructor(val name: String) {
         this.resetRequest(this.requests, requestConsumer)
     }
 
-    private fun resetRequest(requests: List<Request<T>>, requestConsumer: (Request<T>) -> Unit) {
-        requests.forEach(requestConsumer)
+    private fun resetRequest(requests: List<Request<T>>, action: (Request<T>) -> Unit) {
+        requests.forEach(action)
     }
 
 }

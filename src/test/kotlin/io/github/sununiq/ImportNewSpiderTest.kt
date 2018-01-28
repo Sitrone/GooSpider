@@ -11,29 +11,21 @@ import io.github.sununiq.spider.BaseSpider
 import org.junit.Test
 import org.slf4j.LoggerFactory
 
-class DoubanSpiderTest {
+class ImportNewSpiderTest {
 
     @Test
-    fun test() {
-        val spider = DoubanSpider("douban")
+    fun testImportNew() {
+        val spider = ImportNewSpider("importnew")
         Engine.add(spider, Config.default()).start()
     }
 }
 
-/**
- *
- */
-class DoubanSpider(name: String) : BaseSpider<List<String>?>(name) {
-    private val log = LoggerFactory.getLogger(DoubanSpider::class.java)
+private class ImportNewSpider(name: String) : BaseSpider<List<Article>?>(name) {
+    private val log = LoggerFactory.getLogger(ImportNewSpider::class.java)
 
     init {
         this.addStartUrls(
-                "https://movie.douban.com/tag/爱情",
-                "https://movie.douban.com/tag/喜剧",
-                "https://movie.douban.com/tag/动画",
-                "https://movie.douban.com/tag/动作",
-                "https://movie.douban.com/tag/史诗",
-                "https://movie.douban.com/tag/犯罪"
+                "http://www.importnew.com/all-posts/page/1"
         )
     }
 
@@ -42,26 +34,29 @@ class DoubanSpider(name: String) : BaseSpider<List<String>?>(name) {
         /**
          * 添加获取对象的处理方法
          */
-        this.addPipeline(object : Pipeline<List<String>?> {
-            override fun process(item: List<String>?, request: Request<List<String>?>) {
+        this.addPipeline(object : Pipeline<List<Article>?> {
+            override fun process(item: List<Article>?, request: Request<List<Article>?>) {
                 item?.let {
                     it.forEach {
-                        log.debug("save to file: {}", it)
+                        log.debug("content is: {}", it)
                     }
                 }
             }
         })
     }
 
-    override fun parse(response: Response<List<String>?>): Result<List<String>?> {
-        val elements = response.css("#content table .pl2 a")
+    override fun parse(response: Response<List<Article>?>): Result<List<Article>?> {
 
-        val titles = elements?.map { it.text() }
+        val elements = response.css("#wrapper div.grid-8 div.post-thumb a")
+
+        val titles = elements?.map {
+            Article(it.attr("title"), it.attr("href"))
+        }
 
         val result = Result(titles)
 
         // 获取下一页 URL
-        val nextEl = response.css("#content > div > div.article > div.paginator > span.next > a")
+        val nextEl = response.css("#wrapper .navigation.margin-20 .next.page-numbers")
         if (null != nextEl && nextEl.size > 0) {
             val nextPageUrl = nextEl[0].attr("href")
             val nextReq = this.generateRequest(nextPageUrl)
@@ -69,6 +64,6 @@ class DoubanSpider(name: String) : BaseSpider<List<String>?>(name) {
         }
         return result
     }
-
 }
 
+data class Article(val title: String, val url: String)

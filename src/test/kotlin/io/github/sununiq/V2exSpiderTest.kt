@@ -11,29 +11,23 @@ import io.github.sununiq.spider.BaseSpider
 import org.junit.Test
 import org.slf4j.LoggerFactory
 
-class DoubanSpiderTest {
+class V2exSpiderTest {
 
     @Test
-    fun test() {
-        val spider = DoubanSpider("douban")
+    fun testV2exTitle() {
+        val spider = V2exSpider("v2ex")
         Engine.add(spider, Config.default()).start()
     }
 }
 
-/**
- *
- */
-class DoubanSpider(name: String) : BaseSpider<List<String>?>(name) {
-    private val log = LoggerFactory.getLogger(DoubanSpider::class.java)
+private class V2exSpider(name: String) : BaseSpider<List<String>?>(name) {
+    private val log = LoggerFactory.getLogger(V2exSpider::class.java)
 
     init {
         this.addStartUrls(
-                "https://movie.douban.com/tag/爱情",
-                "https://movie.douban.com/tag/喜剧",
-                "https://movie.douban.com/tag/动画",
-                "https://movie.douban.com/tag/动作",
-                "https://movie.douban.com/tag/史诗",
-                "https://movie.douban.com/tag/犯罪"
+                "https://www.v2ex.com/?tab=tech",
+                "https://www.v2ex.com/?tab=play",
+                "https://www.v2ex.com/?tab=creative"
         )
     }
 
@@ -46,7 +40,7 @@ class DoubanSpider(name: String) : BaseSpider<List<String>?>(name) {
             override fun process(item: List<String>?, request: Request<List<String>?>) {
                 item?.let {
                     it.forEach {
-                        log.debug("save to file: {}", it)
+                        log.debug("content is: {}", it)
                     }
                 }
             }
@@ -54,7 +48,8 @@ class DoubanSpider(name: String) : BaseSpider<List<String>?>(name) {
     }
 
     override fun parse(response: Response<List<String>?>): Result<List<String>?> {
-        val elements = response.css("#content table .pl2 a")
+
+        val elements = response.css("#Main span.item_title a")
 
         val titles = elements?.map { it.text() }
 
@@ -69,6 +64,4 @@ class DoubanSpider(name: String) : BaseSpider<List<String>?>(name) {
         }
         return result
     }
-
 }
-

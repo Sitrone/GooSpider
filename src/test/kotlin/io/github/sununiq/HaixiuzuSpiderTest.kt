@@ -17,7 +17,7 @@ class HaixiuzuSpiderTest {
 
     @Test
     fun test() {
-        val spider = HaixiuSpider("qiushibaike")
+        val spider = HaixiuSpider("haixiuzu")
         Engine.add(spider, Config.default()).start()
     }
 
@@ -46,7 +46,7 @@ class HaixiuzuSpiderTest {
 }
 
 class HaixiuSpider(name: String) : BaseSpider<List<String>?>(name) {
-    private val log = LoggerFactory.getLogger(DoubanSpider::class.java)
+    private val log = LoggerFactory.getLogger(HaixiuSpider::class.java)
 
     init {
         this.addStartUrls(
@@ -61,7 +61,9 @@ class HaixiuSpider(name: String) : BaseSpider<List<String>?>(name) {
         this.addPipeline(object : Pipeline<List<String>?> {
             override fun process(item: List<String>?, request: Request<List<String>?>) {
                 item?.let {
-                    log.debug("content is: {}", it)
+                    it.forEach {
+                        log.debug("content is: {}", it)
+                    }
                 }
             }
         })
@@ -80,7 +82,7 @@ class HaixiuSpider(name: String) : BaseSpider<List<String>?>(name) {
         val nextEl = response.css("#content > div > div.article > div.paginator > span.next > a")
         if (null != nextEl && nextEl.size > 0) {
             val nextPageUrl = nextEl[0].attr("href")
-            val nextReq = this.makeRequest(nextPageUrl)
+            val nextReq = this.generateRequest(nextPageUrl)
             result.addRequest(nextReq)
         }
         return result

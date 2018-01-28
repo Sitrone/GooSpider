@@ -6,11 +6,15 @@ import java.util.concurrent.atomic.LongAdder
 /**
  * 定制线程名
  */
-class NamedThreadFactory constructor(private val prefix: String) : ThreadFactory {
+class NamedThreadFactory constructor(private val prefix: String, private val isDaemon: Boolean = false) : ThreadFactory {
     private val threadNumber = LongAdder()
 
     override fun newThread(runnable: Runnable): Thread {
         this.threadNumber.increment()
-        return Thread(runnable, prefix + "@thread-" + threadNumber.toInt())
+        val t = Thread(runnable, prefix + "@thread-" + threadNumber.toInt())
+        if (isDaemon) {
+            t.isDaemon = true
+        }
+        return t
     }
 }
