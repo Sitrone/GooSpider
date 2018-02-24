@@ -1,6 +1,7 @@
 package io.github.sununiq
 
 import io.github.sununiq.config.Config
+import io.github.sununiq.download.downloadPage
 import io.github.sununiq.pipeline.Pipeline
 import io.github.sununiq.request.Request
 import io.github.sununiq.response.Response
@@ -10,24 +11,24 @@ import io.github.sununiq.response.css
 import io.github.sununiq.spider.BaseSpider
 import org.junit.Test
 import org.slf4j.LoggerFactory
+import java.util.*
 
-class V2exSpiderTest {
+class AlbumSpiderTest {
 
     @Test
-    fun testV2exTitle() {
-        val spider = V2exSpider("v2ex")
+    fun testDoubanAlbumTitle() {
+        val spider = AlbumSpider("Douban Album")
         Engine.add(spider, Config.default()).start()
     }
 }
 
-private class V2exSpider(name: String) : BaseSpider<List<String>?>(name) {
-    private val log = LoggerFactory.getLogger(V2exSpider::class.java)
+private class AlbumSpider(name: String) : BaseSpider<List<String>?>(name) {
+    private val log = LoggerFactory.getLogger(AlbumSpider::class.java)
 
     init {
         this.addStartUrls(
-                "https://www.v2ex.com/?tab=tech",
-                "https://www.v2ex.com/?tab=play",
-                "https://www.v2ex.com/?tab=creative"
+                "https://www.douban.com/photos/album/105181925/",
+                "https://www.douban.com/photos/album/127493069/"
         )
     }
 
@@ -49,11 +50,11 @@ private class V2exSpider(name: String) : BaseSpider<List<String>?>(name) {
 
     override fun parse(response: Response<List<String>?>): Result<List<String>?> {
 
-        val elements = response.css("#Main span.item_title a")
+        val elements = response.css("#content div.article div.photo_wrap a.photolst_photo")
 
-        val titles = elements?.map { it.text() }
+        val picPages = elements?.map { it.attr("href") }
 
-        val result = Result(titles)
+        val result = Result(getPicUrl(picPages))
 
         // 获取下一页 URL
         val nextEl = response.css("#content > div > div.article > div.paginator > span.next > a")
@@ -63,5 +64,18 @@ private class V2exSpider(name: String) : BaseSpider<List<String>?>(name) {
             result.addRequest(nextReq)
         }
         return result
+    }
+
+    private fun getPicUrl(titleUrls: List<String>?): List<String>? {
+        val elements = LinkedList<String>()
+        titleUrls?.let {
+            it.forEach {
+                val pageResp = downloadPage(it)
+                val pageUrl = pageResp.css("#content div.photo-edit a")
+                pageUrl?.attr("href")?.let { url -> elements.add(url) }
+            }
+        }
+
+        return elements
     }
 }
